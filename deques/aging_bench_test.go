@@ -1,20 +1,15 @@
-package deque
+package deques
 
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
-const benchSizeFmt = "n=%d"
-
-var benchSizes = []int{100, 1_000, 10_000, 100_000, 1_000_000}
-
-var benchSink int
-
-func BenchmarkCountingPushAtCap(b *testing.B) {
+func BenchmarkAgingPushNoEviction(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf(benchSizeFmt, n), func(b *testing.B) {
-			d := NewCounting[int](n)
+			d := NewAging[int](time.Hour)
 			for i := range n {
 				d.Push(i)
 			}
@@ -26,10 +21,10 @@ func BenchmarkCountingPushAtCap(b *testing.B) {
 	}
 }
 
-func BenchmarkCountingPushPop(b *testing.B) {
+func BenchmarkAgingPushPop(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf(benchSizeFmt, n), func(b *testing.B) {
-			d := NewCounting[int](n)
+			d := NewAging[int](time.Hour)
 			for i := range n {
 				d.Push(i)
 			}
@@ -42,12 +37,12 @@ func BenchmarkCountingPushPop(b *testing.B) {
 	}
 }
 
-func BenchmarkCountingPopDrain(b *testing.B) {
+func BenchmarkAgingPopDrain(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf(benchSizeFmt, n), func(b *testing.B) {
 			for b.Loop() {
 				b.StopTimer()
-				d := NewCounting[int](n)
+				d := NewAging[int](time.Hour)
 				for i := range n {
 					d.Push(i)
 				}
@@ -60,10 +55,10 @@ func BenchmarkCountingPopDrain(b *testing.B) {
 	}
 }
 
-func BenchmarkCountingPop(b *testing.B) {
+func BenchmarkAgingPop(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf(benchSizeFmt, n), func(b *testing.B) {
-			d := NewCounting[int](n)
+			d := NewAging[int](time.Hour)
 			for i := range n {
 				d.Push(i)
 			}
@@ -81,10 +76,10 @@ func BenchmarkCountingPop(b *testing.B) {
 	}
 }
 
-func BenchmarkCountingAt(b *testing.B) {
+func BenchmarkAgingAt(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf(benchSizeFmt, n), func(b *testing.B) {
-			d := NewCounting[int](n)
+			d := NewAging[int](time.Hour)
 			for i := range n {
 				d.Push(i)
 			}
@@ -99,10 +94,10 @@ func BenchmarkCountingAt(b *testing.B) {
 	}
 }
 
-func BenchmarkCountingAll(b *testing.B) {
+func BenchmarkAgingAll(b *testing.B) {
 	for _, n := range benchSizes {
 		b.Run(fmt.Sprintf(benchSizeFmt, n), func(b *testing.B) {
-			d := NewCounting[int](n)
+			d := NewAging[int](time.Hour)
 			for i := range n {
 				d.Push(i)
 			}

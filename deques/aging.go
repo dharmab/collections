@@ -1,4 +1,4 @@
-package deque
+package deques
 
 import (
 	"iter"
