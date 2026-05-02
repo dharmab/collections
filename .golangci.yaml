@@ -1,0 +1,144 @@
+version: "2"
+linters:
+  enable:
+    - asasalint
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - dupword
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - fatcontext
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - goconst
+    - godot
+    - gosec
+    - gosmopolitan
+    - intrange
+    - loggercheck
+    - makezero
+    - misspell
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - testableexamples
+    - testifylint
+    - thelper
+    - tparallel
+    - unconvert
+    - usestdlibvars
+    - usetesting
+    - whitespace
+  disable:
+    - asciicheck
+    - contextcheck
+    - exhaustruct
+    - godox
+    - testpackage
+  settings:
+    staticcheck:
+      checks:
+        - "all"
+    revive:
+      rules:
+        - name: bool-literal-in-expr
+          disabled: false
+        - name: confusing-naming
+          disabled: false
+        - name: confusing-results
+          disabled: false
+        - name: constant-logical-expr
+          disabled: false
+        - name: context-as-argument
+          disabled: false
+        - name: context-keys-type
+          disabled: false
+        - name: defer
+          disabled: false
+        - name: early-return
+          disabled: false
+        - name: empty-block
+          disabled: false
+        - name: error-naming
+          disabled: false
+        - name: error-return
+          disabled: false
+        - name: error-strings
+          disabled: false
+        - name: errorf
+          disabled: false
+        - name: exported
+          disabled: false
+        - name: identical-branches
+          disabled: false
+        - name: if-return
+          disabled: false
+        - name: increment-decrement
+          disabled: false
+        - name: indent-error-flow
+          disabled: false
+        - name: import-shadowing
+          disabled: false
+        - name: modifies-value-receiver
+          disabled: false
+        - name: package-comments
+          disabled: false
+        - name: range
+          disabled: false
+        - name: redefines-builtin-id
+          disabled: false
+        - name: string-of-int
+          disabled: false
+        - name: superfluous-else
+          disabled: false
+        - name: time-naming
+          disabled: false
+        - name: var-declaration
+          disabled: false
+        - name: unconditional-recursion
+          disabled: false
+        - name: unhandled-error
+          disabled: false
+          arguments:
+            - "strings\\.Builder\\.WriteString"
+            - "strings\\.Builder\\.WriteRune"
+        - name: unnecessary-stmt
+          disabled: false
+        - name: unreachable-code
+          disabled: false
+        - name: unused-parameter
+          disabled: false
+        - name: unused-receiver
+          disabled: false
+        - name: waitgroup-by-value
+          disabled: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+issues:
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
