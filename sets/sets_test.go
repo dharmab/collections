@@ -9,42 +9,42 @@ func TestOfAndContains(t *testing.T) {
 	t.Parallel()
 	s := Of(1, 2, 3)
 	for _, e := range []int{1, 2, 3} {
-		if !s.Contains(e) {
+		if !Contains(s, e) {
 			t.Errorf("expected set to contain %d", e)
 		}
 	}
-	if s.Contains(4) {
+	if Contains(s, 4) {
 		t.Errorf("expected set to not contain 4")
 	}
-	if s.Len() != 3 {
-		t.Errorf("expected len 3, got %d", s.Len())
+	if Len(s) != 3 {
+		t.Errorf("expected len 3, got %d", Len(s))
 	}
 }
 
 func TestAddRemove(t *testing.T) {
 	t.Parallel()
 	s := New[string]()
-	s.Add("a")
-	s.Add("a")
-	if s.Len() != 1 {
-		t.Errorf("expected len 1 after duplicate add, got %d", s.Len())
+	Add(s, "a")
+	Add(s, "a")
+	if Len(s) != 1 {
+		t.Errorf("expected len 1 after duplicate add, got %d", Len(s))
 	}
-	s.Remove("a")
-	if s.Contains("a") {
+	Remove(s, "a")
+	if Contains(s, "a") {
 		t.Errorf("expected 'a' to be removed")
 	}
-	s.Remove("missing") // no-op
+	Remove(s, "missing") // no-op
 }
 
 func TestClone(t *testing.T) {
 	t.Parallel()
 	a := Of(1, 2, 3)
-	b := a.Clone()
-	b.Add(4)
-	if a.Contains(4) {
+	b := Clone(a)
+	Add(b, 4)
+	if Contains(a, 4) {
 		t.Errorf("clone should not affect original")
 	}
-	if !b.Contains(4) {
+	if !Contains(b, 4) {
 		t.Errorf("clone should have new element")
 	}
 }
@@ -72,7 +72,7 @@ func TestIntersection(t *testing.T) {
 
 	// Disjoint sets produce empty intersection.
 	got = Intersection(Of(1, 2), Of(3, 4))
-	if got.Len() != 0 {
+	if Len(got) != 0 {
 		t.Errorf("expected empty intersection, got %v", got)
 	}
 }
@@ -158,7 +158,7 @@ func TestAllIterator(t *testing.T) {
 	t.Parallel()
 	s := Of(1, 2, 3)
 	var got []int
-	for e := range s.All() {
+	for e := range All(s) {
 		got = append(got, e)
 	}
 	slices.Sort(got)
@@ -172,7 +172,7 @@ func TestAllEarlyTermination(t *testing.T) {
 	t.Parallel()
 	s := Of(1, 2, 3, 4, 5)
 	count := 0
-	for range s.All() {
+	for range All(s) {
 		count++
 		if count == 2 {
 			break
@@ -186,7 +186,7 @@ func TestAllEarlyTermination(t *testing.T) {
 func TestCollect(t *testing.T) {
 	t.Parallel()
 	a := Of(1, 2, 3)
-	b := Collect(a.All())
+	b := Collect(All(a))
 	if !Equal(a, b) {
 		t.Errorf("Collect round-trip failed: %v vs %v", a, b)
 	}

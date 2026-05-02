@@ -25,28 +25,28 @@ func Of[T comparable](elements ...T) Set[T] {
 }
 
 // Add inserts an element into s.
-func (s Set[T]) Add(e T) {
+func Add[T comparable](s Set[T], e T) {
 	s[e] = struct{}{}
 }
 
 // Remove deletes an element from s. It is a no-op if the element is absent.
-func (s Set[T]) Remove(e T) {
+func Remove[T comparable](s Set[T], e T) {
 	delete(s, e)
 }
 
 // Contains reports whether s contains e.
-func (s Set[T]) Contains(e T) bool {
+func Contains[T comparable](s Set[T], e T) bool {
 	_, ok := s[e]
 	return ok
 }
 
 // Len returns the number of elements in s.
-func (s Set[T]) Len() int {
+func Len[T comparable](s Set[T]) int {
 	return len(s)
 }
 
 // Clone returns a shallow copy of s.
-func (s Set[T]) Clone() Set[T] {
+func Clone[T comparable](s Set[T]) Set[T] {
 	c := make(Set[T], len(s))
 	for e := range s {
 		c[e] = struct{}{}
@@ -56,7 +56,7 @@ func (s Set[T]) Clone() Set[T] {
 
 // All returns an iterator over the elements of s. Iteration order is
 // unspecified, matching Go map iteration semantics.
-func (s Set[T]) All() iter.Seq[T] {
+func All[T comparable](s Set[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		for e := range s {
 			if !yield(e) {
