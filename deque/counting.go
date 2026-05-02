@@ -4,8 +4,12 @@ import "iter"
 
 // Counting is a FIFO queue that drops the oldest entry whenever a Push
 // would cause the queue to exceed its maximum length.
+//
+// Internally it uses a ring buffer for O(1) push, pop, and indexed access.
 type Counting[T any] struct {
-	items  []T
+	buf    []T
+	head   int
+	count  int
 	maxLen int
 }
 
@@ -15,7 +19,11 @@ func NewCounting[T any](maxLen int) *Counting[T] {
 	if maxLen < 0 {
 		maxLen = 0
 	}
-	return &Counting[T]{maxLen: maxLen}
+	d := &Counting[T]{maxLen: maxLen}
+	if maxLen > 0 {
+		d.buf = make([]T, maxLen)
+	}
+	return d
 }
 
 // Push adds v to the back of the queue, evicting the oldest entry if the
@@ -24,21 +32,26 @@ func (d *Counting[T]) Push(v T) {
 	if d.maxLen == 0 {
 		return
 	}
-	d.items = append(d.items, v)
-	d.trim(d.maxLen)
+	idx := (d.head + d.count) % d.maxLen
+	d.buf[idx] = v
+	if d.count == d.maxLen {
+		d.head = (d.head + 1) % d.maxLen
+	} else {
+		d.count++
+	}
 }
 
 // Pop removes and returns the oldest entry. The second return value is
 // false if the queue is empty.
 func (d *Counting[T]) Pop() (T, bool) {
 	var zero T
-	if len(d.items) == 0 {
+	if d.count == 0 {
 		return zero, false
 	}
-	v := d.items[0]
-	n := copy(d.items, d.items[1:])
-	clear(d.items[n:])
-	d.items = d.items[:n]
+	v := d.buf[d.head]
+	d.buf[d.head] = zero
+	d.head = (d.head + 1) % d.maxLen
+	d.count--
 	return v, true
 }
 
@@ -46,41 +59,43 @@ func (d *Counting[T]) Pop() (T, bool) {
 // value is false if the queue is empty.
 func (d *Counting[T]) Oldest() (T, bool) {
 	var zero T
-	if len(d.items) == 0 {
+	if d.count == 0 {
 		return zero, false
 	}
-	return d.items[0], true
+	return d.buf[d.head], true
 }
 
 // Newest returns the most recently pushed entry without removing it. The
 // second return value is false if the queue is empty.
 func (d *Counting[T]) Newest() (T, bool) {
 	var zero T
-	if len(d.items) == 0 {
+	if d.count == 0 {
 		return zero, false
 	}
-	return d.items[len(d.items)-1], true
+	idx := (d.head + d.count - 1) % d.maxLen
+	return d.buf[idx], true
 }
 
 // At returns the entry at the given index, where 0 is the oldest entry.
 // The second return value is false if the index is out of range.
 func (d *Counting[T]) At(i int) (T, bool) {
 	var zero T
-	if i < 0 || i >= len(d.items) {
+	if i < 0 || i >= d.count {
 		return zero, false
 	}
-	return d.items[i], true
+	return d.buf[(d.head+i)%d.maxLen], true
 }
 
 // Len returns the current number of entries.
 func (d *Counting[T]) Len() int {
-	return len(d.items)
+	return d.count
 }
 
 // Clear removes all entries from the queue.
 func (d *Counting[T]) Clear() {
-	clear(d.items)
-	d.items = d.items[:0]
+	clear(d.buf)
+	d.head = 0
+	d.count = 0
 }
 
 // Cap returns the maximum length configured for the queue.
@@ -95,27 +110,25 @@ func (d *Counting[T]) SetCap(maxLen int) {
 	if maxLen < 0 {
 		maxLen = 0
 	}
+	newBuf := make([]T, maxLen)
+	keep := min(d.count, maxLen)
+	skip := d.count - keep
+	for i := range keep {
+		newBuf[i] = d.buf[(d.head+skip+i)%d.maxLen]
+	}
+	d.buf = newBuf
+	d.head = 0
+	d.count = keep
 	d.maxLen = maxLen
-	d.trim(maxLen)
 }
 
 // All returns an iterator over the entries from oldest to newest.
 func (d *Counting[T]) All() iter.Seq[T] {
 	return func(yield func(T) bool) {
-		for _, v := range d.items {
-			if !yield(v) {
+		for i := range d.count {
+			if !yield(d.buf[(d.head+i)%d.maxLen]) {
 				return
 			}
 		}
 	}
-}
-
-// trim drops the oldest entries until len(items) <= keep.
-func (d *Counting[T]) trim(keep int) {
-	if len(d.items) <= keep {
-		return
-	}
-	n := copy(d.items, d.items[len(d.items)-keep:])
-	clear(d.items[n:])
-	d.items = d.items[:n]
 }

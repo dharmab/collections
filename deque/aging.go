@@ -12,8 +12,12 @@ type agingEntry[T any] struct {
 
 // Aging is a FIFO queue that drops entries older than a configured
 // maximum age. Eviction happens lazily on every operation.
+//
+// Internally it uses a head pointer with periodic compaction for
+// amortized O(1) push and pop.
 type Aging[T any] struct {
 	items  []agingEntry[T]
+	head   int
 	maxAge time.Duration
 }
 
@@ -37,13 +41,13 @@ func (d *Aging[T]) Push(v T) {
 func (d *Aging[T]) Pop() (T, bool) {
 	d.evict()
 	var zero T
-	if len(d.items) == 0 {
+	if d.head >= len(d.items) {
 		return zero, false
 	}
-	v := d.items[0].value
-	n := copy(d.items, d.items[1:])
-	clear(d.items[n:])
-	d.items = d.items[:n]
+	v := d.items[d.head].value
+	d.items[d.head] = agingEntry[T]{}
+	d.head++
+	d.compact()
 	return v, true
 }
 
@@ -52,10 +56,10 @@ func (d *Aging[T]) Pop() (T, bool) {
 func (d *Aging[T]) Oldest() (T, bool) {
 	d.evict()
 	var zero T
-	if len(d.items) == 0 {
+	if d.head >= len(d.items) {
 		return zero, false
 	}
-	return d.items[0].value, true
+	return d.items[d.head].value, true
 }
 
 // Newest returns the most recently pushed non-expired entry without
@@ -63,7 +67,7 @@ func (d *Aging[T]) Oldest() (T, bool) {
 func (d *Aging[T]) Newest() (T, bool) {
 	d.evict()
 	var zero T
-	if len(d.items) == 0 {
+	if d.head >= len(d.items) {
 		return zero, false
 	}
 	return d.items[len(d.items)-1].value, true
@@ -75,22 +79,24 @@ func (d *Aging[T]) Newest() (T, bool) {
 func (d *Aging[T]) At(i int) (T, bool) {
 	d.evict()
 	var zero T
-	if i < 0 || i >= len(d.items) {
+	actual := d.head + i
+	if i < 0 || actual >= len(d.items) {
 		return zero, false
 	}
-	return d.items[i].value, true
+	return d.items[actual].value, true
 }
 
 // Len returns the number of non-expired entries.
 func (d *Aging[T]) Len() int {
 	d.evict()
-	return len(d.items)
+	return len(d.items) - d.head
 }
 
 // Clear removes all entries from the queue.
 func (d *Aging[T]) Clear() {
 	clear(d.items)
 	d.items = d.items[:0]
+	d.head = 0
 }
 
 // MaxAge returns the configured maximum entry age.
@@ -113,7 +119,7 @@ func (d *Aging[T]) SetMaxAge(maxAge time.Duration) {
 func (d *Aging[T]) All() iter.Seq[T] {
 	return func(yield func(T) bool) {
 		d.evict()
-		for _, e := range d.items {
+		for _, e := range d.items[d.head:] {
 			if !yield(e.value) {
 				return
 			}
@@ -121,25 +127,35 @@ func (d *Aging[T]) All() iter.Seq[T] {
 	}
 }
 
-// evict drops every entry whose age exceeds maxAge.
+// evict drops every entry whose age exceeds maxAge by advancing the head pointer.
 func (d *Aging[T]) evict() {
-	if len(d.items) == 0 {
+	live := d.items[d.head:]
+	if len(live) == 0 {
 		return
 	}
 	if d.maxAge == 0 {
 		clear(d.items)
 		d.items = d.items[:0]
+		d.head = 0
 		return
 	}
 	now := time.Now()
-	i := 0
-	for i < len(d.items) && now.Sub(d.items[i].addedAt) > d.maxAge {
-		i++
+	evicted := 0
+	for evicted < len(live) && now.Sub(live[evicted].addedAt) > d.maxAge {
+		live[evicted] = agingEntry[T]{}
+		evicted++
 	}
-	if i == 0 {
-		return
+	d.head += evicted
+	d.compact()
+}
+
+// compact reclaims dead space when the head pointer has advanced past
+// half the underlying slice.
+func (d *Aging[T]) compact() {
+	if d.head > 0 && d.head >= len(d.items)/2 {
+		n := copy(d.items, d.items[d.head:])
+		clear(d.items[n:])
+		d.items = d.items[:n]
+		d.head = 0
 	}
-	n := copy(d.items, d.items[i:])
-	clear(d.items[n:])
-	d.items = d.items[:n]
 }
