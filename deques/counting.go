@@ -76,14 +76,14 @@ func (d *Counting[T]) Newest() (T, bool) {
 	return d.buf[idx], true
 }
 
-// At returns the entry at the given index, where 0 is the oldest entry.
-// The second return value is false if the index is out of range.
+// At returns the entry at the given index, where 0 is the newest entry.
+// The second return value is false if i < 0 or i >= Len().
 func (d *Counting[T]) At(i int) (T, bool) {
 	var zero T
 	if i < 0 || i >= d.count {
 		return zero, false
 	}
-	return d.buf[(d.head+i)%d.maxLen], true
+	return d.buf[(d.head+d.count-1-i)%d.maxLen], true
 }
 
 // Len returns the current number of entries.
@@ -122,10 +122,10 @@ func (d *Counting[T]) SetCap(maxLen int) {
 	d.maxLen = maxLen
 }
 
-// All returns an iterator over the entries from oldest to newest.
+// All returns an iterator over the entries from newest to oldest.
 func (d *Counting[T]) All() iter.Seq[T] {
 	return func(yield func(T) bool) {
-		for i := range d.count {
+		for i := d.count - 1; i >= 0; i-- {
 			if !yield(d.buf[(d.head+i)%d.maxLen]) {
 				return
 			}

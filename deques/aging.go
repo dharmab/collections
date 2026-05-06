@@ -74,13 +74,13 @@ func (d *Aging[T]) Newest() (T, bool) {
 }
 
 // At returns the non-expired entry at the given index, where 0 is the
-// oldest non-expired entry. The second return value is false if the
-// index is out of range.
+// newest non-expired entry. The second return value is false if
+// i < 0 or i >= Len().
 func (d *Aging[T]) At(i int) (T, bool) {
 	d.evict()
 	var zero T
-	actual := d.head + i
-	if i < 0 || actual >= len(d.items) {
+	actual := len(d.items) - 1 - i
+	if i < 0 || actual < d.head {
 		return zero, false
 	}
 	return d.items[actual].value, true
@@ -115,12 +115,12 @@ func (d *Aging[T]) SetMaxAge(maxAge time.Duration) {
 	d.evict()
 }
 
-// All returns an iterator over the non-expired entries from oldest to newest.
+// All returns an iterator over the non-expired entries from newest to oldest.
 func (d *Aging[T]) All() iter.Seq[T] {
 	return func(yield func(T) bool) {
 		d.evict()
-		for _, e := range d.items[d.head:] {
-			if !yield(e.value) {
+		for i := len(d.items) - 1; i >= d.head; i-- {
+			if !yield(d.items[i].value) {
 				return
 			}
 		}

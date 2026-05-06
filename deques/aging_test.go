@@ -92,7 +92,7 @@ func TestAgingAt(t *testing.T) {
 		for _, v := range []int{10, 20, 30} {
 			d.Push(v)
 		}
-		for i, want := range []int{10, 20, 30} {
+		for i, want := range []int{30, 20, 10} {
 			got, ok := d.At(i)
 			if !ok || got != want {
 				t.Errorf("At(%d) = %d, %v; want %d, true", i, got, ok, want)
@@ -168,7 +168,7 @@ func TestAgingAll(t *testing.T) {
 			d.Push(v)
 		}
 		got := slices.Collect(d.All())
-		want := []int{1, 2, 3}
+		want := []int{3, 2, 1}
 		if !slices.Equal(got, want) {
 			t.Errorf("All() = %v, want %v", got, want)
 		}
